@@ -1,0 +1,43 @@
+version: "3.7"
+services:
+  dev:
+    tty: true # Keep Alive
+    image: dev
+    container_name: composed_dev
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      EXAMPLE: ${EXAMPLE}
+      EXAMPLE_SECRET: ${EXAMPLE_SECRET}
+    command: /bin/bash
+    # Bind to local files
+    volumes:
+      - type: bind
+        source: ../src
+        target: /src/src
+        read_only: False
+      - type: bind
+        source: ../tests
+        target: /src/tests
+        read_only: False
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      # Dev files in top level directory
+      - type: bind
+        source: ../docker/Makefile
+        target: /src/Makefile
+        read_only: False
+      - type: bind
+        source: ../mypy.ini
+        target: /src/mypy.ini
+        read_only: False
+      - type: bind
+        source: ../pylintrc
+        target: /src/pylintrc
+        read_only: False
+      - type: bind
+        source: ../README.md
+        target: /src/README.md
+        read_only: False

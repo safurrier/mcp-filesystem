@@ -1,0 +1,55 @@
+name: Code Quality Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install uv
+        run: pip install uv
+        
+      - name: Install dependencies
+        run: |
+          uv pip compile pyproject.toml -o requirements.txt
+          uv pip compile pyproject.toml --extra dev -o requirements-dev.txt
+          uv venv
+          uv pip sync requirements.txt requirements-dev.txt
+          
+      - name: Determine module name
+        id: module
+        run: |
+          if [ -d "src" ]; then
+            echo "name=src" >> $GITHUB_OUTPUT
+          else
+            MODULE_NAME=$(basename $(find . -maxdepth 1 -type d -not -path "*/\.*" -not -path "./tests" -not -path "./scripts" -not -path "./docker" -not -path "." | sort | head -1))
+            echo "name=$MODULE_NAME" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Run Linter
+        run: uv run -m ruff check --fix ${{ steps.module.outputs.name }}
+        
+      - name: Run Formatter
+        run: uv run -m ruff format ${{ steps.module.outputs.name }}
+        
+      - name: Run Tests
+        run: uv run -m pytest tests --cov=${{ steps.module.outputs.name }} --cov-report=term-missing --cov-report=xml
+        
+      - name: Run MyPy
+        run: uv run -m mypy ${{ steps.module.outputs.name }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        continue-on-error: true
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false

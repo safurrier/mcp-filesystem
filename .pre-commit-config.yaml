@@ -1,0 +1,27 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: lint
+        name: Run Linter
+        entry: make lint
+        language: system
+        always_run: true
+        pass_filenames: false
+    -   id: format
+        name: Run Formatter
+        entry: make format
+        language: system
+        always_run: true
+        pass_filenames: false
+    -   id: test
+        name: Run Tests
+        entry: make test
+        language: system
+        always_run: true
+        pass_filenames: false
+    -   id: mypy
+        name: Run MyPy
+        entry: make mypy
+        language: system
+        always_run: true
+        pass_filenames: false
