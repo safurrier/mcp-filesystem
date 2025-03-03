@@ -16,3 +16,4 @@ docker/.env
 .ruff_cache/*
 .aider*
 CLAUDE.md
+docs/**

@@ -1,19 +1,40 @@
 [project]
 name = "mcp-filesystem"
-version = "0.1.0"
-description = "MCP for filesystem search and manipulation. Supports more granular search, content search and file edits"
+version = "0.2.0"
+description = "MCP server for filesystem search and manipulation with granular search, content search and file edits"
 authors = [
     { name = "alex furrier", email = "safurrier@gmail.com" },
 ]
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 readme = "README.md"
-dependencies = []
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Filesystems",
+    "Topic :: Text Processing :: Filters",
+    "Topic :: Utilities",
+]
+keywords = ["mcp", "filesystem", "claude", "ai", "fastmcp"]
+dependencies = [
+    "fastmcp>=0.4.0",
+    "typer>=0.9.0",
+    "typing-extensions>=4.6.0",
+]
+
+[project.scripts]
+mcp-filesystem = "mcp_filesystem.__main__:app"
 
 [project.optional-dependencies]
 dev = [
     "mypy>=1.9.0",
     "pytest>=8.1.1",
     "pytest-cov>=5.0.0",
+    "pytest-asyncio>=0.23.0",
     "ruff>=0.3.0",
     "pre-commit>=3.6.0",
     "tomli>=2.0.1",
@@ -30,3 +51,13 @@ build-backend = "hatchling.build"
 packages = [
     "mcp_filesystem",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = [
+    "integtest: mark a test as an integration test",
+    "smoketest: mark a test as a smoke test",
+]
+
