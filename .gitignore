@@ -17,3 +17,7 @@ docker/.env
 .aider*
 CLAUDE.md
 docs/**
+
+# AI conversation artifacts
+context/**
+AI_CHANGELOG.md

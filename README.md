@@ -1,6 +1,5 @@
 # MCP Filesystem Server
 
-[![PyPI - Version](https://img.shields.io/pypi/v/mcp-filesystem.svg)](https://pypi.org/project/mcp-filesystem)
 [![License](https://img.shields.io/github/license/safurrier/mcp-filesystem.svg)](https://github.com/safurrier/mcp-filesystem/blob/main/LICENSE)
 
 A powerful Model Context Protocol (MCP) server for filesystem operations that provides Claude and other MCP clients with secure access to files and directories.
@@ -19,79 +18,62 @@ A powerful Model Context Protocol (MCP) server for filesystem operations that pr
   - Efficiently handles large files and directories
   - Ripgrep integration for blazing fast searches
   - Line-targeted operations to avoid loading entire files
-- **Claude Integration**: Easily installs in Claude Desktop
+- **Comprehensive Testing**: 75+ tests with behavior-driven approach
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## Installation
 
-### From PyPI
-```bash
-# With pip
-pip install mcp-filesystem
+### Development Setup
 
-# With uv (recommended for Claude Desktop)
-uv pip install mcp-filesystem
-```
-
-### From Source
 ```bash
-# With pip
-git clone https://github.com/safurrier/mcp-filesystem.git
+# Clone the repository
+git clone https://github.com/yourusername/mcp-filesystem.git
 cd mcp-filesystem
-pip install -e .
 
-# With uv (recommended for Claude Desktop)
-git clone https://github.com/safurrier/mcp-filesystem.git
-cd mcp-filesystem
-uv pip install -e .
+# Install dependencies with uv
+uv pip sync requirements.txt requirements-dev.txt
 ```
 
-## Quick Start
+## Usage
 
-Run the server with access to the current directory:
+### Running the Server
+
+Run the server with access to specific directories:
 
 ```bash
-mcp-filesystem run
+# Using uv (recommended)
+uv run -m mcp_filesystem run /path/to/dir1 /path/to/dir2
+
+# Or using standard Python
+python -m mcp_filesystem run /path/to/dir1 /path/to/dir2
 ```
 
-Allow access to specific directories:
+#### Options
+
+- `--transport` or `-t`: Transport protocol (stdio or sse, default: stdio)
+- `--port` or `-p`: Port for SSE transport (default: 8000)
+- `--debug` or `-d`: Enable debug logging
+
+### Using with MCP Inspector
+
+For interactive testing and debugging with the MCP Inspector:
 
 ```bash
-mcp-filesystem run /path/to/dir1 /path/to/dir2
+# Basic usage
+npx @modelcontextprotocol/inspector uv run -m mcp_filesystem run /path/to/directory
+
+# With SSE transport
+npx @modelcontextprotocol/inspector uv run -m mcp_filesystem run /path/to/directory --transport sse --port 8080
+
+# With debug output
+npx @modelcontextprotocol/inspector uv run -m mcp_filesystem run /path/to/directory --debug
 ```
 
-Use SSE transport instead of stdio:
-
-```bash
-mcp-filesystem run --transport sse --port 8000
-```
-
-## MCP Inspector Usage
-
-When using with MCP Inspector:
-
-```
-Command: uv
-Arguments: --directory /path/to/mcp-filesystem run mcp-filesystem run
-```
-
-Note: The trailing `run` is required as it specifies the subcommand to execute.
-
-This server has been refactored to use the new FastMCP SDK for better alignment with current MCP best practices. It now uses a more efficient component caching system and direct decorator pattern rather than a class-based approach.
+This server has been built with the FastMCP SDK for better alignment with current MCP best practices. It uses an efficient component caching system and direct decorator pattern.
 
 ## Claude Desktop Integration
 
-To install in Claude Desktop:
-
-```bash
-# Using mcp CLI
-mcp install mcp-filesystem
-
-# With access to specific directories
-mcp install mcp-filesystem --args="/path/to/dir1 /path/to/dir2"
-```
-
-Or manually edit your Claude Desktop config file:
+Edit your Claude Desktop config file to integrate MCP-Filesystem:
 
 **Config file location:**
 - On macOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
@@ -103,10 +85,9 @@ Or manually edit your Claude Desktop config file:
     "mcp-filesystem": {
       "command": "uv",
       "args": [
-        "--directory",
-        "/path/to/mcp-filesystem",
         "run",
-        "mcp-filesystem",
+        "-m",
+        "mcp_filesystem",
         "run"
       ]
     }
@@ -122,10 +103,9 @@ To allow access to specific directories, add them as additional arguments:
     "mcp-filesystem": {
       "command": "uv",
       "args": [
-        "--directory",
-        "/path/to/mcp-filesystem",
         "run",
-        "mcp-filesystem",
+        "-m",
+        "mcp_filesystem",
         "run",
         "/Users/yourusername/Projects",
         "/Users/yourusername/Documents"
@@ -135,7 +115,41 @@ To allow access to specific directories, add them as additional arguments:
 }
 ```
 
-Note: The trailing `run` at the end of the args is required as it specifies the subcommand to execute.
+Note: The `run` command at the end is required as it specifies the subcommand to execute.
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run -m pytest tests/
+
+# Run specific test file
+uv run -m pytest tests/test_operations_unit.py
+
+# Run with coverage
+uv run -m pytest tests/ --cov=mcp_filesystem --cov-report=term-missing
+```
+
+### Code Style and Quality
+
+```bash
+# Format code
+uv run -m ruff format mcp_filesystem
+
+# Lint code
+uv run -m ruff check --fix mcp_filesystem
+
+# Type check
+uv run -m mypy mcp_filesystem
+
+# Run all checks
+uv run -m ruff format mcp_filesystem && \
+uv run -m ruff check --fix mcp_filesystem && \
+uv run -m mypy mcp_filesystem && \
+uv run -m pytest tests --cov=mcp_filesystem
+```
 
 ## Available Tools
 
