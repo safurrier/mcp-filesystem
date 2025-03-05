@@ -42,10 +42,10 @@ Run the server with access to specific directories:
 
 ```bash
 # Using uv (recommended)
-uv run -m mcp_filesystem run /path/to/dir1 /path/to/dir2
+uv run run_server.py /path/to/dir1 /path/to/dir2
 
 # Or using standard Python
-python -m mcp_filesystem run /path/to/dir1 /path/to/dir2
+python run_server.py /path/to/dir1 /path/to/dir2
 ```
 
 #### Options
@@ -60,13 +60,13 @@ For interactive testing and debugging with the MCP Inspector:
 
 ```bash
 # Basic usage
-npx @modelcontextprotocol/inspector uv run -m mcp_filesystem run /path/to/directory
+npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory
 
 # With SSE transport
-npx @modelcontextprotocol/inspector uv run -m mcp_filesystem run /path/to/directory --transport sse --port 8080
+npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory --transport sse --port 8080
 
 # With debug output
-npx @modelcontextprotocol/inspector uv run -m mcp_filesystem run /path/to/directory --debug
+npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory --debug
 ```
 
 This server has been built with the FastMCP SDK for better alignment with current MCP best practices. It uses an efficient component caching system and direct decorator pattern.
@@ -85,10 +85,10 @@ Edit your Claude Desktop config file to integrate MCP-Filesystem:
     "mcp-filesystem": {
       "command": "uv",
       "args": [
+        "--directory",
+        "/path/to/mcp-filesystem/repo",
         "run",
-        "-m",
-        "mcp_filesystem",
-        "run"
+        "run_server.py"
       ]
     }
   }
@@ -103,10 +103,10 @@ To allow access to specific directories, add them as additional arguments:
     "mcp-filesystem": {
       "command": "uv",
       "args": [
+        "--directory",
+        "/path/to/mcp-filesystem/repo",
         "run",
-        "-m",
-        "mcp_filesystem",
-        "run",
+        "run_server.py",
         "/Users/yourusername/Projects",
         "/Users/yourusername/Documents"
       ]
@@ -115,7 +115,7 @@ To allow access to specific directories, add them as additional arguments:
 }
 ```
 
-Note: The `run` command at the end is required as it specifies the subcommand to execute.
+> Note: The `--directory` flag is important as it tells uv where to find the repository containing run_server.py. Replace `/path/to/mcp-filesystem/repo` with the actual path to where you cloned the repository on your system.
 
 ## Development
 
