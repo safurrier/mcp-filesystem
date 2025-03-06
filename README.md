@@ -2,16 +2,30 @@
 
 [![License](https://img.shields.io/github/license/safurrier/mcp-filesystem.svg)](https://github.com/safurrier/mcp-filesystem/blob/main/LICENSE)
 
-A powerful Model Context Protocol (MCP) server for filesystem operations that provides Claude and other MCP clients with secure access to files and directories.
+A powerful Model Context Protocol (MCP) server for filesystem operations optimized for intelligent interaction with large files and filesystems. It provides secure access to files and directories with smart context management to maximize efficiency when working with extensive data.
 
-## Features
+## Why MCP-Filesystem?
+
+- **Smart Context Management**: Work efficiently with large files and filesystems
+  - Partial reading to focus only on relevant content
+  - Precise context control for finding exactly what you need
+  - Token-efficient search results with pagination
+  - Multi-file operations to reduce request overhead
+
+- **Intelligent File Operations**:
+  - Line-targeted reading with configurable context windows
+  - Advanced editing with content verification to prevent conflicts
+  - Fine-grained search capabilities that exceed standard grep
+  - Relative line references for precise file manipulation
+
+## Key Features
 
 - **Secure File Access**: Only allows operations within explicitly allowed directories
 - **Comprehensive Operations**: Full set of file system capabilities
   - Standard operations (read, write, list, move, delete)
   - Enhanced operations (tree visualization, duplicate finding, etc.)
   - Advanced search with grep integration (uses ripgrep when available)
-    - Context control (like grep's -A/-B/-C options) 
+    - Context control (like grep's -A/-B/-C options)
     - Result pagination for large result sets
   - Line-targeted operations with content verification and relative line numbers
 - **Performance Optimized**:
@@ -340,28 +354,74 @@ Arguments: {
 }
 ```
 
-## Efficient Workflow
+## Efficient Workflow for Large Files and Filesystems
 
-The tools are designed to work together efficiently:
+MCP-Filesystem is designed for intelligent interaction with large files and complex filesystems:
 
-1. Use `grep_files` to find relevant content with precise context control
-   - Fine-grained control over context lines before/after matches
-   - Paginate through large result sets efficiently
-2. Examine specific sections with `read_file_lines` using offset/limit
-   - Zero-based indexing with simple offset/limit parameters
-   - Control exactly how many lines to read
-3. Make targeted edits with `edit_file_at_line` with content verification
-   - Verify content hasn't changed before editing
-   - Use relative line numbers for regional editing
-   - Multiple edit actions in a single operation
+1. **Smart Context Discovery**
+   - Use `grep_files` to find exactly what you need with precise context control
+   - Fine-grained control over context lines before/after matches prevents token waste
+   - Paginate through large result sets efficiently without overwhelming token limits
+   - Ripgrep integration handles massive filesystems with millions of files and lines
 
-This workflow allows Claude to work effectively even with very large codebases by focusing on just the relevant parts while ensuring edits are safe and precise.
+2. **Targeted Reading**
+   - Examine only relevant sections with `read_file_lines` using offset/limit
+   - Zero-based indexing with simple offset/limit parameters for precise content retrieval
+   - Control exactly how many lines to read to maximize token efficiency
+   - Read multiple files simultaneously to reduce round-trips
+
+3. **Precise Editing**
+   - Make targeted edits with `edit_file_at_line` with content verification
+   - Verify content hasn't changed before editing to prevent conflicts
+   - Use relative line numbers for regional editing in complex files
+   - Multiple edit actions in a single operation for complex changes
+   - Dry-run capability to preview changes before applying
+
+4. **Advanced Analysis**
+   - Use specialized tools like `find_duplicate_files` and `compare_files`
+   - Generate directory trees with `directory_tree` for quick navigation
+   - Identify problematic areas with `find_large_files` and `find_empty_directories`
+
+This workflow is particularly valuable for AI-powered tools that need to work with large files and filesystems. For example, Claude and other advanced AI assistants can leverage these capabilities to efficiently navigate codebases, analyze log files, or work with any large text-based datasets while maintaining token efficiency.
+
+## Advantages Over Standard Filesystem MCP Servers
+
+Unlike basic filesystem MCP servers, MCP-Filesystem offers:
+
+1. **Token Efficiency**
+   - Smart line-targeted operations avoid loading entire files into context
+   - Pagination controls for large results prevent context overflow
+   - Precise grep with context controls (not just whole file searches)
+   - Multi-file reading reduces round-trip requests
+
+2. **Intelligent Editing**
+   - Content verification to prevent edit conflicts
+   - Line-targeted edits that don't require the entire file
+   - Relative line number support for easier regional editing
+   - Dry-run capability to preview changes before applying
+
+3. **Advanced Search**
+   - Ripgrep integration for massive filesystem performance
+   - Context-aware results (not just matches)
+   - Fine-grained control over what gets returned
+   - Pattern-based file finding with exclusion support
+
+4. **Additional Utilities**
+   - File comparison and deduplication
+   - Directory size calculation and analysis
+   - Empty directory identification
+   - Tree-based directory visualization
+
+5. **Security Focus**
+   - Robust path validation and sandboxing
+   - Protection against path traversal attacks
+   - Symlink validation and security
+   - Detailed error reporting without sensitive exposure
 
 ## Known Issues and Limitations
 
-- **Regex Escaping**: When using regex patterns with special characters like `\d`, `\w`, or `\s`, you may need to double-escape backslashes (e.g., `\\d`, `\\w`, `\\s`). This is due to how JSON processes escape characters.
 - **Path Resolution**: Always use absolute paths for the most consistent results. Relative paths might be interpreted relative to the server's working directory rather than the allowed directories.
-- **Performance**: For large directories, operations like `find_duplicate_files` might take significant time to complete.
+- **Performance**: For large directories, operations like `find_duplicate_files` or recusrive search might take significant time to complete.
 - **Permission Handling**: The server operates with the same permissions as the user running it. Make sure the server has appropriate permissions for the directories it needs to access.
 
 ## Security
