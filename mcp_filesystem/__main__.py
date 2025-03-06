@@ -16,9 +16,9 @@ app = typer.Typer(
 )
 
 
-@app.command()
-def run(
-    directory: Annotated[
+@app.callback(invoke_without_command=True)
+def main(
+    directories: Annotated[
         Optional[List[str]],
         typer.Argument(
             help="Allowed directories (defaults to current directory if none provided)",
@@ -49,32 +49,31 @@ def run(
             help="Enable debug logging",
         ),
     ] = False,
-    name: Annotated[
-        Optional[str],
+    version: Annotated[
+        bool,
         typer.Option(
-            "--name",
-            "-n",
-            help="Server name",
+            "--version",
+            "-v",
+            help="Show version information",
         ),
-    ] = None,
+    ] = False,
 ) -> None:
     """Run the MCP Filesystem Server.
 
     By default, the server will only allow access to the current directory.
     You can specify one or more allowed directories as arguments.
     """
+    if version:
+        show_version()
+        return
+
     # Set allowed directories in environment for the server to pick up
-    if directory:
-        os.environ["MCP_ALLOWED_DIRS"] = os.pathsep.join(directory)
+    if directories:
+        os.environ["MCP_ALLOWED_DIRS"] = os.pathsep.join(directories)
 
     # Set debug mode if requested
     if debug:
         os.environ["FASTMCP_LOG_LEVEL"] = "DEBUG"
-
-    # Setting custom name is not supported with FastMCP
-    # Just log the name for now
-    if name:
-        print(f"Using server name: {name}")
 
     try:
         if transport.lower() == "sse":
@@ -90,8 +89,7 @@ def run(
         sys.exit(1)
 
 
-@app.command()
-def version() -> None:
+def show_version() -> None:
     """Show version information."""
     try:
         from importlib.metadata import version as get_version

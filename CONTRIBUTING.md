@@ -1,11 +1,11 @@
-# Contributing to Python Collab Template
+# Contributing to MCP Filesystem
 
 Thank you for your interest in contributing to this project!
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone git@github.com:your-username/python-collab-template.git`
+2. Clone your fork: `git clone git@github.com:your-username/mcp-filesystem.git`
 3. Create a new branch: `git checkout -b feature-name`
 4. Make your changes
 5. Run quality checks: `make check`

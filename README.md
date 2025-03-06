@@ -1,97 +1,174 @@
 # MCP Filesystem Server
 
-[![PyPI - Version](https://img.shields.io/pypi/v/mcp-filesystem.svg)](https://pypi.org/project/mcp-filesystem)
 [![License](https://img.shields.io/github/license/safurrier/mcp-filesystem.svg)](https://github.com/safurrier/mcp-filesystem/blob/main/LICENSE)
 
-A powerful Model Context Protocol (MCP) server for filesystem operations that provides Claude and other MCP clients with secure access to files and directories.
+A powerful Model Context Protocol (MCP) server for filesystem operations optimized for intelligent interaction with large files and filesystems. It provides secure access to files and directories with smart context management to maximize efficiency when working with extensive data.
 
-## Features
+## Why MCP-Filesystem?
+
+- **Smart Context Management**: Work efficiently with large files and filesystems
+  - Partial reading to focus only on relevant content
+  - Precise context control for finding exactly what you need
+  - Token-efficient search results with pagination
+  - Multi-file operations to reduce request overhead
+
+- **Intelligent File Operations**:
+  - Line-targeted reading with configurable context windows
+  - Advanced editing with content verification to prevent conflicts
+  - Fine-grained search capabilities that exceed standard grep
+  - Relative line references for precise file manipulation
+
+## Key Features
 
 - **Secure File Access**: Only allows operations within explicitly allowed directories
 - **Comprehensive Operations**: Full set of file system capabilities
   - Standard operations (read, write, list, move, delete)
   - Enhanced operations (tree visualization, duplicate finding, etc.)
   - Advanced search with grep integration (uses ripgrep when available)
-    - Context control (like grep's -A/-B/-C options) 
+    - Context control (like grep's -A/-B/-C options)
     - Result pagination for large result sets
   - Line-targeted operations with content verification and relative line numbers
 - **Performance Optimized**:
   - Efficiently handles large files and directories
   - Ripgrep integration for blazing fast searches
   - Line-targeted operations to avoid loading entire files
-- **Claude Integration**: Easily installs in Claude Desktop
+- **Comprehensive Testing**: 75+ tests with behavior-driven approach
 - **Cross-Platform**: Works on Windows, macOS, and Linux
+
+## Quickstart Guide
+
+### 1. Clone and Setup
+
+First, install uv if you haven't already:
+
+```bash
+# Install uv using the official installer
+curl -fsSL https://raw.githubusercontent.com/astral-sh/uv/main/install.sh | bash
+
+# Or with pipx
+pipx install uv
+```
+
+Then clone the repository and install dependencies:
+
+```bash
+# Clone the repository
+git clone https://github.com/safurrier/mcp-filesystem.git
+cd mcp-filesystem
+
+# Install dependencies with uv
+uv pip sync requirements.txt requirements-dev.txt
+```
+
+### 2. Get Absolute Paths
+
+You'll need absolute paths both for the repository location and any directories you want to access:
+
+```bash
+# Get the absolute path to the repository
+REPO_PATH=$(pwd)
+echo "Repository path: $REPO_PATH"
+
+# Get absolute paths to directories you want to access
+realpath ~/Documents
+realpath ~/Downloads
+# Or on systems without realpath:
+echo "$(cd ~/Documents && pwd)"
+```
+
+### 3. Configure Claude Desktop
+
+Open your Claude Desktop configuration file:
+- On macOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+Add the following configuration (substitute your actual paths):
+
+```json
+{
+  "mcpServers": {
+    "mcp-filesystem": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/absolute/path/to/mcp-filesystem",
+        "run",
+        "run_server.py",
+        "/absolute/path/to/dir1",
+        "/absolute/path/to/dir2"
+      ]
+    }
+  }
+}
+```
+
+> **Important**: All paths must be absolute (full paths from root directory).
+> Use `realpath` or `pwd` to ensure you have the correct absolute paths.
+
+### 4. Restart Claude Desktop
+
+After saving your configuration, restart Claude Desktop for the changes to take effect.
 
 ## Installation
 
-### From PyPI
-```bash
-# With pip
-pip install mcp-filesystem
+## Usage
 
-# With uv (recommended for Claude Desktop)
-uv pip install mcp-filesystem
-```
+### Watch Server Logs
 
-### From Source
-```bash
-# With pip
-git clone https://github.com/safurrier/mcp-filesystem.git
-cd mcp-filesystem
-pip install -e .
-
-# With uv (recommended for Claude Desktop)
-git clone https://github.com/safurrier/mcp-filesystem.git
-cd mcp-filesystem
-uv pip install -e .
-```
-
-## Quick Start
-
-Run the server with access to the current directory:
+You can monitor the server logs from Claude Desktop with:
 
 ```bash
-mcp-filesystem run
+# On macOS
+tail -n 20 -f ~/Library/Logs/Claude/mcp-server-mcp-filesystem.log
+
+# On Windows (PowerShell)
+Get-Content -Path "$env:APPDATA\Claude\Logs\mcp-server-mcp-filesystem.log" -Tail 20 -Wait
 ```
 
-Allow access to specific directories:
+This is particularly useful for debugging issues or seeing exactly what Claude is requesting.
+
+### Running the Server
+
+Run the server with access to specific directories:
 
 ```bash
-mcp-filesystem run /path/to/dir1 /path/to/dir2
+# Using uv (recommended)
+uv run run_server.py /path/to/dir1 /path/to/dir2
+
+# Or using standard Python
+python run_server.py /path/to/dir1 /path/to/dir2
+
+# Example with actual paths
+uv run run_server.py /Users/username/Documents /Users/username/Downloads
 ```
 
-Use SSE transport instead of stdio:
+#### Options
+
+- `--transport` or `-t`: Transport protocol (stdio or sse, default: stdio)
+- `--port` or `-p`: Port for SSE transport (default: 8000)
+- `--debug` or `-d`: Enable debug logging
+- `--version` or `-v`: Show version information
+
+### Using with MCP Inspector
+
+For interactive testing and debugging with the MCP Inspector:
 
 ```bash
-mcp-filesystem run --transport sse --port 8000
+# Basic usage
+npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory
+
+# With SSE transport
+npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory --transport sse --port 8080
+
+# With debug output
+npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory --debug
 ```
 
-## MCP Inspector Usage
-
-When using with MCP Inspector:
-
-```
-Command: uv
-Arguments: --directory /path/to/mcp-filesystem run mcp-filesystem run
-```
-
-Note: The trailing `run` is required as it specifies the subcommand to execute.
-
-This server has been refactored to use the new FastMCP SDK for better alignment with current MCP best practices. It now uses a more efficient component caching system and direct decorator pattern rather than a class-based approach.
+This server has been built with the FastMCP SDK for better alignment with current MCP best practices. It uses an efficient component caching system and direct decorator pattern.
 
 ## Claude Desktop Integration
 
-To install in Claude Desktop:
-
-```bash
-# Using mcp CLI
-mcp install mcp-filesystem
-
-# With access to specific directories
-mcp install mcp-filesystem --args="/path/to/dir1 /path/to/dir2"
-```
-
-Or manually edit your Claude Desktop config file:
+Edit your Claude Desktop config file to integrate MCP-Filesystem:
 
 **Config file location:**
 - On macOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
@@ -104,10 +181,9 @@ Or manually edit your Claude Desktop config file:
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/mcp-filesystem",
+        "/path/to/mcp-filesystem/repo",
         "run",
-        "mcp-filesystem",
-        "run"
+        "run_server.py"
       ]
     }
   }
@@ -123,10 +199,9 @@ To allow access to specific directories, add them as additional arguments:
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/mcp-filesystem",
+        "/path/to/mcp-filesystem/repo",
         "run",
-        "mcp-filesystem",
-        "run",
+        "run_server.py",
         "/Users/yourusername/Projects",
         "/Users/yourusername/Documents"
       ]
@@ -135,7 +210,41 @@ To allow access to specific directories, add them as additional arguments:
 }
 ```
 
-Note: The trailing `run` at the end of the args is required as it specifies the subcommand to execute.
+> Note: The `--directory` flag is important as it tells uv where to find the repository containing run_server.py. Replace `/path/to/mcp-filesystem/repo` with the actual path to where you cloned the repository on your system.
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run -m pytest tests/
+
+# Run specific test file
+uv run -m pytest tests/test_operations_unit.py
+
+# Run with coverage
+uv run -m pytest tests/ --cov=mcp_filesystem --cov-report=term-missing
+```
+
+### Code Style and Quality
+
+```bash
+# Format code
+uv run -m ruff format mcp_filesystem
+
+# Lint code
+uv run -m ruff check --fix mcp_filesystem
+
+# Type check
+uv run -m mypy mcp_filesystem
+
+# Run all checks
+uv run -m ruff format mcp_filesystem && \
+uv run -m ruff check --fix mcp_filesystem && \
+uv run -m mypy mcp_filesystem && \
+uv run -m pytest tests --cov=mcp_filesystem
+```
 
 ## Available Tools
 
@@ -245,28 +354,74 @@ Arguments: {
 }
 ```
 
-## Efficient Workflow
+## Efficient Workflow for Large Files and Filesystems
 
-The tools are designed to work together efficiently:
+MCP-Filesystem is designed for intelligent interaction with large files and complex filesystems:
 
-1. Use `grep_files` to find relevant content with precise context control
-   - Fine-grained control over context lines before/after matches
-   - Paginate through large result sets efficiently
-2. Examine specific sections with `read_file_lines` using offset/limit
-   - Zero-based indexing with simple offset/limit parameters
-   - Control exactly how many lines to read
-3. Make targeted edits with `edit_file_at_line` with content verification
-   - Verify content hasn't changed before editing
-   - Use relative line numbers for regional editing
-   - Multiple edit actions in a single operation
+1. **Smart Context Discovery**
+   - Use `grep_files` to find exactly what you need with precise context control
+   - Fine-grained control over context lines before/after matches prevents token waste
+   - Paginate through large result sets efficiently without overwhelming token limits
+   - Ripgrep integration handles massive filesystems with millions of files and lines
 
-This workflow allows Claude to work effectively even with very large codebases by focusing on just the relevant parts while ensuring edits are safe and precise.
+2. **Targeted Reading**
+   - Examine only relevant sections with `read_file_lines` using offset/limit
+   - Zero-based indexing with simple offset/limit parameters for precise content retrieval
+   - Control exactly how many lines to read to maximize token efficiency
+   - Read multiple files simultaneously to reduce round-trips
+
+3. **Precise Editing**
+   - Make targeted edits with `edit_file_at_line` with content verification
+   - Verify content hasn't changed before editing to prevent conflicts
+   - Use relative line numbers for regional editing in complex files
+   - Multiple edit actions in a single operation for complex changes
+   - Dry-run capability to preview changes before applying
+
+4. **Advanced Analysis**
+   - Use specialized tools like `find_duplicate_files` and `compare_files`
+   - Generate directory trees with `directory_tree` for quick navigation
+   - Identify problematic areas with `find_large_files` and `find_empty_directories`
+
+This workflow is particularly valuable for AI-powered tools that need to work with large files and filesystems. For example, Claude and other advanced AI assistants can leverage these capabilities to efficiently navigate codebases, analyze log files, or work with any large text-based datasets while maintaining token efficiency.
+
+## Advantages Over Standard Filesystem MCP Servers
+
+Unlike basic filesystem MCP servers, MCP-Filesystem offers:
+
+1. **Token Efficiency**
+   - Smart line-targeted operations avoid loading entire files into context
+   - Pagination controls for large results prevent context overflow
+   - Precise grep with context controls (not just whole file searches)
+   - Multi-file reading reduces round-trip requests
+
+2. **Intelligent Editing**
+   - Content verification to prevent edit conflicts
+   - Line-targeted edits that don't require the entire file
+   - Relative line number support for easier regional editing
+   - Dry-run capability to preview changes before applying
+
+3. **Advanced Search**
+   - Ripgrep integration for massive filesystem performance
+   - Context-aware results (not just matches)
+   - Fine-grained control over what gets returned
+   - Pattern-based file finding with exclusion support
+
+4. **Additional Utilities**
+   - File comparison and deduplication
+   - Directory size calculation and analysis
+   - Empty directory identification
+   - Tree-based directory visualization
+
+5. **Security Focus**
+   - Robust path validation and sandboxing
+   - Protection against path traversal attacks
+   - Symlink validation and security
+   - Detailed error reporting without sensitive exposure
 
 ## Known Issues and Limitations
 
-- **Regex Escaping**: When using regex patterns with special characters like `\d`, `\w`, or `\s`, you may need to double-escape backslashes (e.g., `\\d`, `\\w`, `\\s`). This is due to how JSON processes escape characters.
 - **Path Resolution**: Always use absolute paths for the most consistent results. Relative paths might be interpreted relative to the server's working directory rather than the allowed directories.
-- **Performance**: For large directories, operations like `find_duplicate_files` might take significant time to complete.
+- **Performance**: For large directories, operations like `find_duplicate_files` or recusrive search might take significant time to complete.
 - **Permission Handling**: The server operates with the same permissions as the user running it. Make sure the server has appropriate permissions for the directories it needs to access.
 
 ## Security
