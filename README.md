@@ -21,20 +21,97 @@ A powerful Model Context Protocol (MCP) server for filesystem operations that pr
 - **Comprehensive Testing**: 75+ tests with behavior-driven approach
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 
-## Installation
+## Quickstart Guide
 
-### Development Setup
+### 1. Clone and Setup
+
+First, install uv if you haven't already:
+
+```bash
+# Install uv using the official installer
+curl -fsSL https://raw.githubusercontent.com/astral-sh/uv/main/install.sh | bash
+
+# Or with pipx
+pipx install uv
+```
+
+Then clone the repository and install dependencies:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mcp-filesystem.git
+git clone https://github.com/safurrier/mcp-filesystem.git
 cd mcp-filesystem
 
 # Install dependencies with uv
 uv pip sync requirements.txt requirements-dev.txt
 ```
 
+### 2. Get Absolute Paths
+
+You'll need absolute paths both for the repository location and any directories you want to access:
+
+```bash
+# Get the absolute path to the repository
+REPO_PATH=$(pwd)
+echo "Repository path: $REPO_PATH"
+
+# Get absolute paths to directories you want to access
+realpath ~/Documents
+realpath ~/Downloads
+# Or on systems without realpath:
+echo "$(cd ~/Documents && pwd)"
+```
+
+### 3. Configure Claude Desktop
+
+Open your Claude Desktop configuration file:
+- On macOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+Add the following configuration (substitute your actual paths):
+
+```json
+{
+  "mcpServers": {
+    "mcp-filesystem": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/absolute/path/to/mcp-filesystem",
+        "run",
+        "run_server.py",
+        "/absolute/path/to/dir1",
+        "/absolute/path/to/dir2"
+      ]
+    }
+  }
+}
+```
+
+> **Important**: All paths must be absolute (full paths from root directory).
+> Use `realpath` or `pwd` to ensure you have the correct absolute paths.
+
+### 4. Restart Claude Desktop
+
+After saving your configuration, restart Claude Desktop for the changes to take effect.
+
+## Installation
+
 ## Usage
+
+### Watch Server Logs
+
+You can monitor the server logs from Claude Desktop with:
+
+```bash
+# On macOS
+tail -n 20 -f ~/Library/Logs/Claude/mcp-server-mcp-filesystem.log
+
+# On Windows (PowerShell)
+Get-Content -Path "$env:APPDATA\Claude\Logs\mcp-server-mcp-filesystem.log" -Tail 20 -Wait
+```
+
+This is particularly useful for debugging issues or seeing exactly what Claude is requesting.
 
 ### Running the Server
 
@@ -46,6 +123,9 @@ uv run run_server.py /path/to/dir1 /path/to/dir2
 
 # Or using standard Python
 python run_server.py /path/to/dir1 /path/to/dir2
+
+# Example with actual paths
+uv run run_server.py /Users/username/Documents /Users/username/Downloads
 ```
 
 #### Options
@@ -53,6 +133,7 @@ python run_server.py /path/to/dir1 /path/to/dir2
 - `--transport` or `-t`: Transport protocol (stdio or sse, default: stdio)
 - `--port` or `-p`: Port for SSE transport (default: 8000)
 - `--debug` or `-d`: Enable debug logging
+- `--version` or `-v`: Show version information
 
 ### Using with MCP Inspector
 
