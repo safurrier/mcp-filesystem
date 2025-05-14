@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/safurrier-mcp-filesystem-badge.png)](https://mseep.ai/app/safurrier-mcp-filesystem)
+
 # MCP Filesystem Server
 
 [![License](https://img.shields.io/github/license/safurrier/mcp-filesystem.svg)](https://github.com/safurrier/mcp-filesystem/blob/main/LICENSE)
