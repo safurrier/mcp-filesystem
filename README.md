@@ -1,5 +1,7 @@
 # MCP Filesystem Server
 
+> **Status:** This project is no longer under active development. It was useful when MCP clients and agent harnesses were still early and did not yet have good built-in file search or filesystem interaction. Modern clients may already cover much of what this server provides.
+
 MCP Filesystem Server lets an MCP client read, search, and edit files inside directories you explicitly allow. It is useful when Claude Desktop or another MCP client needs filesystem access with path sandboxing, line-range reads, grep-style search, and edit previews.
 
 The server does not grant whole-disk access. At startup you pass one or more allowed directories; every tool call is validated against those roots.
