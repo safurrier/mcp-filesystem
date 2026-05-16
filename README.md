@@ -1,88 +1,57 @@
 # MCP Filesystem Server
 
-[![License](https://img.shields.io/github/license/safurrier/mcp-filesystem.svg)](https://github.com/safurrier/mcp-filesystem/blob/main/LICENSE)
+MCP Filesystem Server lets an MCP client read, search, and edit files inside directories you explicitly allow. It is useful when Claude Desktop or another MCP client needs filesystem access with path sandboxing, line-range reads, grep-style search, and edit previews.
 
-A powerful Model Context Protocol (MCP) server for filesystem operations optimized for intelligent interaction with large files and filesystems. It provides secure access to files and directories with smart context management to maximize efficiency when working with extensive data.
+The server does not grant whole-disk access. At startup you pass one or more allowed directories; every tool call is validated against those roots.
 
-## Why MCP-Filesystem?
+## Quick start from a source checkout
 
-- **Smart Context Management**: Work efficiently with large files and filesystems
-  - Partial reading to focus only on relevant content
-  - Precise context control for finding exactly what you need
-  - Token-efficient search results with pagination
-  - Multi-file operations to reduce request overhead
-
-- **Intelligent File Operations**:
-  - Line-targeted reading with configurable context windows
-  - Advanced editing with content verification to prevent conflicts
-  - Fine-grained search capabilities that exceed standard grep
-  - Relative line references for precise file manipulation
-
-## Key Features
-
-- **Secure File Access**: Only allows operations within explicitly allowed directories
-- **Comprehensive Operations**: Full set of file system capabilities
-  - Standard operations (read, write, list, move, delete)
-  - Enhanced operations (tree visualization, duplicate finding, etc.)
-  - Advanced search with grep integration (uses ripgrep when available)
-    - Context control (like grep's -A/-B/-C options)
-    - Result pagination for large result sets
-  - Line-targeted operations with content verification and relative line numbers
-- **Performance Optimized**:
-  - Efficiently handles large files and directories
-  - Ripgrep integration for blazing fast searches
-  - Line-targeted operations to avoid loading entire files
-- **Comprehensive Testing**: 75+ tests with behavior-driven approach
-- **Cross-Platform**: Works on Windows, macOS, and Linux
-
-## Quickstart Guide
-
-### 1. Clone and Setup
-
-First, install uv if you haven't already:
+This README documents running the server from this repository. Published-package installation is not verified here.
 
 ```bash
-# Install uv using the official installer
-curl -fsSL https://raw.githubusercontent.com/astral-sh/uv/main/install.sh | bash
-
-# Or with pipx
-pipx install uv
-```
-
-Then clone the repository and install dependencies:
-
-```bash
-# Clone the repository
 git clone https://github.com/safurrier/mcp-filesystem.git
 cd mcp-filesystem
-
-# Install dependencies with uv
-uv pip sync requirements.txt requirements-dev.txt
+uv sync --frozen
+uv run run_server.py --version
 ```
 
-### 2. Get Absolute Paths
+Success signal:
 
-You'll need absolute paths both for the repository location and any directories you want to access:
+```text
+MCP Filesystem Server v0.2.0
+A Model Context Protocol server for filesystem operations
+```
+
+`uv sync --frozen` installs the locked dependencies into `.venv` in the checkout.
+
+To see the command-line options without starting an MCP session:
 
 ```bash
-# Get the absolute path to the repository
-REPO_PATH=$(pwd)
-echo "Repository path: $REPO_PATH"
-
-# Get absolute paths to directories you want to access
-realpath ~/Documents
-realpath ~/Downloads
-# Or on systems without realpath:
-echo "$(cd ~/Documents && pwd)"
+uv run run_server.py --help
 ```
 
-### 3. Configure Claude Desktop
+The main entry points in this repo are:
 
-Open your Claude Desktop configuration file:
-- On macOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+- `uv run run_server.py ...` — direct script used by tests and the Claude Desktop examples below.
+- `uv run mcp-filesystem ...` — installed console script with the same Typer CLI.
 
-Add the following configuration (substitute your actual paths):
+## Connect it to Claude Desktop
+
+Use absolute paths for both the repository and the directories you want the server to access:
+
+```bash
+REPO_PATH=$(pwd)
+PROJECTS_PATH=$(cd ~/Projects && pwd)
+DOCUMENTS_PATH=$(cd ~/Documents && pwd)
+printf 'repo=%s\nprojects=%s\ndocuments=%s\n' "$REPO_PATH" "$PROJECTS_PATH" "$DOCUMENTS_PATH"
+```
+
+Edit Claude Desktop's config file:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add one server entry, replacing the example paths with your own absolute paths:
 
 ```json
 {
@@ -94,352 +63,222 @@ Add the following configuration (substitute your actual paths):
         "/absolute/path/to/mcp-filesystem",
         "run",
         "run_server.py",
-        "/absolute/path/to/dir1",
-        "/absolute/path/to/dir2"
+        "/absolute/path/to/allowed-dir-1",
+        "/absolute/path/to/allowed-dir-2"
       ]
     }
   }
 }
 ```
 
-> **Important**: All paths must be absolute (full paths from root directory).
-> Use `realpath` or `pwd` to ensure you have the correct absolute paths.
+Restart Claude Desktop after saving the file.
 
-### 4. Restart Claude Desktop
+Claude-side success signals:
 
-After saving your configuration, restart Claude Desktop for the changes to take effect.
+- The MCP server named `mcp-filesystem` appears in Claude Desktop's MCP tools.
+- The tool list includes `list_allowed_directories`, `read_file`, `grep_files`, and `edit_file_at_line`.
+- Calling `list_allowed_directories` returns only the directories you passed in the config.
 
-## Installation
-
-## Usage
-
-### Watch Server Logs
-
-You can monitor the server logs from Claude Desktop with:
+If the server does not appear, watch the Claude Desktop MCP log:
 
 ```bash
-# On macOS
-tail -n 20 -f ~/Library/Logs/Claude/mcp-server-mcp-filesystem.log
+# macOS
+tail -n 50 -f ~/Library/Logs/Claude/mcp-server-mcp-filesystem.log
 
-# On Windows (PowerShell)
-Get-Content -Path "$env:APPDATA\Claude\Logs\mcp-server-mcp-filesystem.log" -Tail 20 -Wait
+# Windows PowerShell
+Get-Content -Path "$env:APPDATA\Claude\Logs\mcp-server-mcp-filesystem.log" -Tail 50 -Wait
 ```
 
-This is particularly useful for debugging issues or seeing exactly what Claude is requesting.
+## Run the server manually
 
-### Running the Server
-
-Run the server with access to specific directories:
+The server uses stdio by default, which is what MCP clients such as Claude Desktop expect:
 
 ```bash
-# Using uv (recommended)
-uv run run_server.py /path/to/dir1 /path/to/dir2
-
-# Or using standard Python
-python run_server.py /path/to/dir1 /path/to/dir2
-
-# Example with actual paths
-uv run run_server.py /Users/username/Documents /Users/username/Downloads
+uv run run_server.py /absolute/path/to/dir1 /absolute/path/to/dir2
 ```
 
-#### Options
+If you do not pass directories, the server allows the current working directory.
 
-- `--transport` or `-t`: Transport protocol (stdio or sse, default: stdio)
-- `--port` or `-p`: Port for SSE transport (default: 8000)
-- `--debug` or `-d`: Enable debug logging
-- `--version` or `-v`: Show version information
+Options verified from the CLI:
 
-### Using with MCP Inspector
+| Option | Meaning |
+| --- | --- |
+| `--transport`, `-t` | Transport protocol. Default: `stdio`. Use `sse` for SSE. |
+| `--port`, `-p` | Port for SSE transport. Default: `8000`. |
+| `--debug`, `-d` | Enable debug logging through `FASTMCP_LOG_LEVEL=DEBUG`. |
+| `--version`, `-v` | Print version information and exit. |
+| `--help` | Print CLI help and exit. |
 
-For interactive testing and debugging with the MCP Inspector:
+For MCP Inspector testing, run from a checkout:
 
 ```bash
-# Basic usage
-npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory
-
-# With SSE transport
-npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory --transport sse --port 8080
-
-# With debug output
-npx @modelcontextprotocol/inspector uv run run_server.py /path/to/directory --debug
+npx @modelcontextprotocol/inspector uv run run_server.py /absolute/path/to/test-dir
 ```
 
-This server has been built with the FastMCP SDK for better alignment with current MCP best practices. It uses an efficient component caching system and direct decorator pattern.
+The Inspector command may download Node packages through `npx` if they are not already installed.
 
-## Claude Desktop Integration
+## How access control works
 
-Edit your Claude Desktop config file to integrate MCP-Filesystem:
+- Allowed roots come from positional CLI arguments, or from `MCP_ALLOWED_DIRS` when the CLI sets it.
+- If neither is set, the current working directory is the only allowed root.
+- Paths are validated before filesystem operations run.
+- Symlinks are checked so a path inside an allowed root cannot point outside it.
+- The server runs with the operating-system permissions of the user that started it.
 
-**Config file location:**
-- On macOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+Practical rule: pass the narrowest directory that contains the files you want Claude to work with. Do not pass `/`, your full home directory, or a secrets directory unless you mean to expose it to the MCP client.
+
+## MCP tools
+
+Tool names below are taken from `mcp_filesystem/server.py`.
+
+### Discovery and read-only file access
+
+| Tool | Use it for |
+| --- | --- |
+| `list_allowed_directories` | Show the sandbox roots available to this server process. |
+| `list_directory` | List files and directories, with optional hidden-file and pattern filtering. |
+| `get_file_info` | Return file or directory metadata. |
+| `read_file` | Read one complete file. |
+| `read_multiple_files` | Read several complete files in one tool call. |
+| `read_file_lines` | Read a line range with `offset` and `limit`. |
+| `head_file` | Read the first N lines of a text file. |
+| `tail_file` | Read the last N lines of a text file. |
+| `directory_tree` | Return a recursive directory tree with depth and pattern controls. |
+
+### Search
+
+| Tool | Use it for |
+| --- | --- |
+| `grep_files` | Search file contents with literal or regex matching, context lines, pagination, size limits, and optional JSON output. Uses ripgrep when available and falls back to Python. |
+| `search_files` | Find files or directories by glob pattern, optionally requiring content matches. |
+
+### Mutating filesystem operations
+
+| Tool | Use it for |
+| --- | --- |
+| `write_file` | Create or overwrite a file. Can create parent directories when requested. |
+| `create_directory` | Create a directory, optionally including parents. |
+| `move_file` | Move or rename a file or directory. |
+| `edit_file` | Apply old-text/new-text edits and return a git-style diff. Supports `dry_run`. |
+| `edit_file_at_line` | Apply line-targeted edits. Supports verification, relative line numbers, abort-on-verification-failure, and `dry_run`. |
+
+Start mutating work with `dry_run: true` where the tool supports it. For `write_file`, `create_directory`, and `move_file`, choose a temporary test directory first if you are checking behavior.
+
+### Analysis and cleanup helpers
+
+| Tool | Use it for |
+| --- | --- |
+| `calculate_directory_size` | Calculate directory size as human-readable text, bytes, or JSON. |
+| `find_duplicate_files` | Find duplicate files by size and content hash. |
+| `compare_files` | Compare two text files and return similarity plus diff output. |
+| `find_large_files` | Find files above a size threshold. |
+| `find_empty_directories` | Find empty directories. |
+
+These helpers can scan many files. Use narrow allowed directories and result limits for large trees.
+
+## Common workflows
+
+### Read a specific part of a large file
+
+Use `grep_files` to find a match, then `read_file_lines` to inspect the surrounding range. `read_file_lines` uses a 0-based `offset` and a maximum `limit`.
 
 ```json
 {
-  "mcpServers": {
-    "mcp-filesystem": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/path/to/mcp-filesystem/repo",
-        "run",
-        "run_server.py"
-      ]
-    }
-  }
+  "path": "/absolute/path/to/file.log",
+  "offset": 1200,
+  "limit": 80,
+  "encoding": "utf-8"
 }
 ```
 
-To allow access to specific directories, add them as additional arguments:
+### Search with context and pagination
 
 ```json
 {
-  "mcpServers": {
-    "mcp-filesystem": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/path/to/mcp-filesystem/repo",
-        "run",
-        "run_server.py",
-        "/Users/yourusername/Projects",
-        "/Users/yourusername/Documents"
-      ]
-    }
-  }
+  "path": "/absolute/path/to/project",
+  "pattern": "def main",
+  "is_regex": false,
+  "context_before": 2,
+  "context_after": 4,
+  "include_patterns": ["*.py"],
+  "results_offset": 0,
+  "results_limit": 20
 }
 ```
 
-> Note: The `--directory` flag is important as it tells uv where to find the repository containing run_server.py. Replace `/path/to/mcp-filesystem/repo` with the actual path to where you cloned the repository on your system.
+### Preview a line-targeted edit
 
-## Development
-
-### Running Tests
-
-```bash
-# Run all tests
-uv run -m pytest tests/
-
-# Run specific test file
-uv run -m pytest tests/test_operations_unit.py
-
-# Run with coverage
-uv run -m pytest tests/ --cov=mcp_filesystem --cov-report=term-missing
-```
-
-### Code Style and Quality
-
-```bash
-# Format code
-uv run -m ruff format mcp_filesystem
-
-# Lint code
-uv run -m ruff check --fix mcp_filesystem
-
-# Type check
-uv run -m mypy mcp_filesystem
-
-# Run all checks
-uv run -m ruff format mcp_filesystem && \
-uv run -m ruff check --fix mcp_filesystem && \
-uv run -m mypy mcp_filesystem && \
-uv run -m pytest tests --cov=mcp_filesystem
-```
-
-## Available Tools
-
-### Basic File Operations
-
-- **read_file**: Read the complete contents of a file
-- **read_multiple_files**: Read multiple files simultaneously
-- **write_file**: Create a new file or overwrite an existing file
-- **create_directory**: Create a new directory or ensure a directory exists
-- **list_directory**: Get a detailed listing of files and directories
-- **move_file**: Move or rename files and directories
-- **get_file_info**: Retrieve detailed metadata about a file or directory
-- **list_allowed_directories**: List directories the server is allowed to access
-
-### Line-Targeted Operations
-
-- **read_file_lines**: Read specific line ranges with offset/limit parameters
-- **edit_file_at_line**: Make precise edits with content verification and relative line numbers
-  - Support for content verification to prevent editing outdated content
-  - Relative line numbers for easier regional editing
-  - Multiple edit actions (replace, insert_before, insert_after, delete)
-- **head_file**: Read the first N lines of a text file
-- **tail_file**: Read the last N lines of a text file
-
-### Advanced Search
-
-- **grep_files**: Search for patterns in files with powerful options
-  - Ripgrep integration for performance (with Python fallback)
-  - Fine-grained context control (like grep's -A/-B/-C options)
-  - Result pagination for large search results
-  - RegEx support with case sensitivity and whole word options
-- **search_files**: Search for files matching patterns with content search
-- **directory_tree**: Get a recursive tree view of files and directories
-
-### Analytics and Reporting
-
-- **calculate_directory_size**: Calculate the total size of a directory
-- **find_duplicate_files**: Find duplicate files by comparing content
-- **compare_files**: Compare two text files and show differences
-- **find_large_files**: Find files larger than a specified size
-- **find_empty_directories**: Find empty directories
-
-## Usage Examples
-
-### Reading File Lines
-
-```
-Tool: read_file_lines
-Arguments: {
-  "path": "/path/to/file.txt",
-  "offset": 99,        # 0-based indexing (line 100)
-  "limit": 51,         # Read 51 lines
-  "encoding": "utf-8"  # Optional encoding
-}
-```
-
-### Searching for Content with Grep
-
-```
-Tool: grep_files
-Arguments: {
-  "path": "/path/to/search",
-  "pattern": "function\\s+\\w+\\(",
-  "is_regex": true,
-  "context_before": 2,       # Show 2 lines before each match (like grep -B)
-  "context_after": 5,        # Show 5 lines after each match (like grep -A)
-  "include_patterns": ["*.js", "*.ts"],
-  "results_offset": 0,       # Start from the first match
-  "results_limit": 20        # Show at most 20 matches
-}
-```
-
-### Line-Targeted Editing
-
-```
-Tool: edit_file_at_line
-Arguments: {
-  "path": "/path/to/file.txt",
+```json
+{
+  "path": "/absolute/path/to/file.txt",
   "line_edits": [
     {
       "line_number": 15,
       "action": "replace",
-      "content": "This is the new content for line 15\n",
-      "expected_content": "Original content of line 15\n" # Verify content before editing
-    },
-    {
-      "line_number": 20,
-      "action": "delete"
+      "content": "replacement text\n",
+      "expected_content": "old text\n"
     }
   ],
-  "offset": 0,                           # Start considering lines from this offset
-  "relative_line_numbers": false,        # Whether line numbers are relative to offset
-  "abort_on_verification_failure": true, # Stop on verification failure
-  "dry_run": true                        # Preview changes without applying
+  "abort_on_verification_failure": true,
+  "dry_run": true
 }
 ```
 
-### Finding Duplicate Files
+Then repeat with `dry_run: false` only after the preview is correct.
 
-```
-Tool: find_duplicate_files
-Arguments: {
-  "path": "/path/to/search",
-  "recursive": true,
-  "min_size": 1024,
-  "format": "text"
-}
+## Development
+
+Set up the checkout:
+
+```bash
+uv sync --frozen --all-extras
 ```
 
-## Efficient Workflow for Large Files and Filesystems
+Run focused checks while editing:
 
-MCP-Filesystem is designed for intelligent interaction with large files and complex filesystems:
+```bash
+uv run -m pytest tests/test_cli.py
+uv run -m pytest tests/test_server_unit.py
+uv run -m ruff check mcp_filesystem tests
+uv run -m mypy mcp_filesystem
+```
 
-1. **Smart Context Discovery**
-   - Use `grep_files` to find exactly what you need with precise context control
-   - Fine-grained control over context lines before/after matches prevents token waste
-   - Paginate through large result sets efficiently without overwhelming token limits
-   - Ripgrep integration handles massive filesystems with millions of files and lines
+The Makefile also provides maintainer workflows:
 
-2. **Targeted Reading**
-   - Examine only relevant sections with `read_file_lines` using offset/limit
-   - Zero-based indexing with simple offset/limit parameters for precise content retrieval
-   - Control exactly how many lines to read to maximize token efficiency
-   - Read multiple files simultaneously to reduce round-trips
+```bash
+make setup   # compiles requirements, creates .venv, syncs deps, installs pre-commit hooks
+make check   # setup, lint with --fix, format, tests with coverage, mypy
+```
 
-3. **Precise Editing**
-   - Make targeted edits with `edit_file_at_line` with content verification
-   - Verify content hasn't changed before editing to prevent conflicts
-   - Use relative line numbers for regional editing in complex files
-   - Multiple edit actions in a single operation for complex changes
-   - Dry-run capability to preview changes before applying
+`make check` mutates local files because it may update requirements, install hooks, apply Ruff fixes, and write coverage data.
 
-4. **Advanced Analysis**
-   - Use specialized tools like `find_duplicate_files` and `compare_files`
-   - Generate directory trees with `directory_tree` for quick navigation
-   - Identify problematic areas with `find_large_files` and `find_empty_directories`
+## Troubleshooting
 
-This workflow is particularly valuable for AI-powered tools that need to work with large files and filesystems. For example, Claude and other advanced AI assistants can leverage these capabilities to efficiently navigate codebases, analyze log files, or work with any large text-based datasets while maintaining token efficiency.
+### Claude Desktop cannot start the server
 
-## Advantages Over Standard Filesystem MCP Servers
+Do this:
 
-Unlike basic filesystem MCP servers, MCP-Filesystem offers:
+1. Run `uv run run_server.py --version` from the checkout.
+2. Confirm the Claude config uses an absolute path after `--directory`.
+3. Confirm every allowed directory path is absolute and exists.
+4. Check the Claude MCP log shown above.
 
-1. **Token Efficiency**
-   - Smart line-targeted operations avoid loading entire files into context
-   - Pagination controls for large results prevent context overflow
-   - Precise grep with context controls (not just whole file searches)
-   - Multi-file reading reduces round-trip requests
+Do not use relative paths in the Claude config; they may be resolved relative to the client process, not this repository.
 
-2. **Intelligent Editing**
-   - Content verification to prevent edit conflicts
-   - Line-targeted edits that don't require the entire file
-   - Relative line number support for easier regional editing
-   - Dry-run capability to preview changes before applying
+### A file outside the allowed directory is rejected
 
-3. **Advanced Search**
-   - Ripgrep integration for massive filesystem performance
-   - Context-aware results (not just matches)
-   - Fine-grained control over what gets returned
-   - Pattern-based file finding with exclusion support
+That is expected. Restart the MCP server with the narrowest additional allowed root that contains the file.
 
-4. **Additional Utilities**
-   - File comparison and deduplication
-   - Directory size calculation and analysis
-   - Empty directory identification
-   - Tree-based directory visualization
+### Search is slower than expected
 
-5. **Security Focus**
-   - Robust path validation and sandboxing
-   - Protection against path traversal attacks
-   - Symlink validation and security
-   - Detailed error reporting without sensitive exposure
+Install `ripgrep` (`rg`). The server uses ripgrep when it is available and falls back to Python search otherwise.
 
-## Known Issues and Limitations
+### A mutating tool changed the wrong file
 
-- **Path Resolution**: Always use absolute paths for the most consistent results. Relative paths might be interpreted relative to the server's working directory rather than the allowed directories.
-- **Performance**: For large directories, operations like `find_duplicate_files` or recusrive search might take significant time to complete.
-- **Permission Handling**: The server operates with the same permissions as the user running it. Make sure the server has appropriate permissions for the directories it needs to access.
+Prefer `edit_file_at_line` with `expected_content`, `abort_on_verification_failure: true`, and `dry_run: true` before applying changes. For whole-file replacement, use `read_file` or `get_file_info` first so the client has the current path and content.
 
-## Security
+## Further reading
 
-The server enforces strict path validation to prevent access outside allowed directories:
-
-- Only allows operations within explicitly allowed directories
-- Provides protection against path traversal attacks
-- Validates symlinks to ensure they don't point outside allowed directories
-- Returns meaningful error messages without exposing sensitive information
-
-## Performance Considerations
-
-For best performance with grep functionality:
-
-- Install [ripgrep](https://github.com/BurntSushi/ripgrep#installation) (`rg`)
-- The server automatically uses ripgrep if available, with a Python fallback
-
-## License
-
-[MIT License](LICENSE)
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution flow and maintainer expectations.
+- [CHANGELOG.md](CHANGELOG.md) — notable changes and API behavior notes.
+- [LICENSE](LICENSE) — MIT license.
