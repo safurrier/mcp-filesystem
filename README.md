@@ -1,14 +1,19 @@
 # MCP Filesystem Server
 
-> **Status:** This project is no longer under active development. It was useful when MCP clients and agent harnesses were still early and did not yet have good built-in file search or filesystem interaction. Modern clients may already cover much of what this server provides.
+> [!WARNING]
+> **Archived. Do not use this project for new work.**
+>
+> This was built before modern coding-agent harnesses had good filesystem tools, shell access, scoped editing, and context management. Those harnesses now provide the useful parts of this server directly, without adding another MCP layer.
+>
+> This repository is kept only as a historical reference. I do not recommend installing it, depending on it, or using it as the starting point for a new filesystem integration.
 
-MCP Filesystem Server lets an MCP client read, search, and edit files inside directories you explicitly allow. It is useful when Claude Desktop or another MCP client needs filesystem access with path sandboxing, line-range reads, grep-style search, and edit previews.
+MCP Filesystem Server let an MCP client read, search, and edit files inside explicitly allowed directories. It was designed for early MCP clients that needed path sandboxing, line-range reads, grep-style search, and edit previews.
 
 The server does not grant whole-disk access. At startup you pass one or more allowed directories; every tool call is validated against those roots.
 
-## Quick start from a source checkout
+## Historical setup
 
-This README documents running the server from this repository. Published-package installation is not verified here.
+The remaining documentation records how the project worked. These commands are not maintained or recommended for new setups. Published-package installation is not verified.
 
 ```bash
 git clone https://github.com/safurrier/mcp-filesystem.git
